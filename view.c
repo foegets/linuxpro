@@ -5,6 +5,8 @@
 #include<stdlib.h>
 #include<dirent.h>
 #include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
 #define PATH_MAX 255
 #define CMD_MAX 30
 const int cnum=11; //number of cmd
@@ -53,20 +55,67 @@ void ls2(const char* dirname)
 {
     DIR *dirp;
     struct dirent* entry;
+    printf("%s\n",dirname);
     if((dirp=opendir(dirname))==NULL)
     {
-        perror("ls: NO such file or directory\n");
+        perror("ls2: NO such file or directory\n");
         return;
     }else{
+        printf("Dir:");
         while((entry=readdir(dirp))!=NULL)
         {
-            
+            if(strcmp(entry->d_name,".")==0||strcmp(entry->d_name,"..")==0)continue;
+            if(entry->d_type==DT_DIR)printf("%s   ",entry->d_name);
         }
+        rewinddir(dirp);
+        printf("\nFile:");
+        while((entry=readdir(dirp))!=NULL)
+        {
+            if(strcmp(entry->d_name,".")==0||strcmp(entry->d_name,"..")==0)continue;
+            if(entry->d_type==DT_REG)printf("%s   ",entry->d_name);
+        }
+        printf("\n");
+        closedir(dirp);
     }
 }
-void touch(){}
-void echo2(){}
-void cat2(){}
+void touch2(int fnum,const char fname[CMD_MAX][CMD_MAX])
+{
+    for(int i=1;i<fnum;++i)
+    {  
+        int fd=open(fname[i],O_CREAT,0777);
+        if(fd==-1){
+            fprintf(stderr,"file %s created fail\n",fname[i]);
+            continue;
+        }
+        close(fd);
+    }
+    return;
+}
+void echo2(int strnum,char str[CMD_MAX][CMD_MAX])
+{
+    for(int i=1;i<strnum;++i)
+    {
+        fputs(str[i],stdout);
+        if(i!=strnum-1)putchar(' ');
+    }
+    putchar('\n');
+}
+void cat2(char* fname)
+{
+    int fd1=open(fname,O_RDONLY);
+    if(fd1==-1)
+    {
+        perror("cat2: No such the file\n");
+    }else{
+        char buf[1024];
+        size_t rbytes;
+        while((rbytes=read(fd1,buf,sizeof(buf)))!=0)
+        {
+            puts(buf);
+        }
+        close(fd1);
+    }
+}
 void cp2(){}
 void rm2(){}
 void rename2(){}
@@ -96,13 +145,14 @@ int main(int argc,char** argv)
     int ci=0;
     while(ci<cnum&&strcmp(allcmd[ci],cmd_argv[0])!=0)ci++;
     for(int i=0;i<index;++i)printf("%s ",cmd_argv[i]);
+    printf("%d\n",index);
     switch(ci){
         case 0:pwd2();break;
-        case 1:cd2(index>0?cmd_argv[1]:NULL);break;
-        case 2:break;
-        case 3:break;
-        case 4:break;
-        case 5:break;
+        case 1:cd2(index>1?cmd_argv[1]:NULL);break;
+        case 2:ls2(index>1?cmd_argv[1]:".");break;
+        case 3:touch2(index,cmd_argv);break;
+        case 4:echo2(index,cmd_argv);break;
+        case 5:cat2(cmd_argv[1]);break;
         case 6:break;
         case 7:break;
         case 8:break;
