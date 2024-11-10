@@ -7,8 +7,10 @@
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<fcntl.h>
+#include<errno.h>
 #define PATH_MAX 255
 #define CMD_MAX 30
+#define SIZE 1024
 const int cnum=11; //number of cmd
 char cwd[PATH_MAX];
 char cmd_argv[CMD_MAX][CMD_MAX];
@@ -100,25 +102,66 @@ void echo2(int strnum,char str[CMD_MAX][CMD_MAX])
     }
     putchar('\n');
 }
-void cat2(char* fname)
+void cat2(const char* fname)
 {
-    int fd1=open(fname,O_RDONLY);
-    if(fd1==-1)
+    FILE* fp;
+    if((fp=fopen(fname,"r"))==NULL)
     {
-        perror("cat2: No such the file\n");
+        perror("can't open file\n");
+        return;
     }else{
-        char buf[1024];
-        size_t rbytes;
-        while((rbytes=read(fd1,buf,sizeof(buf)))!=0)
+        char buf[SIZE];
+        int linenum=1;
+        while(fgets(buf,sizeof(buf),fp)!=NULL)
         {
-            puts(buf);
+            printf("%d %s",linenum++,buf);
+        }
+    }
+
+
+}
+void cp2(const char* src,const char* dest)
+{
+    int fd1,fd2;
+    if(src==NULL||dest==NULL){
+        perror("no enough argument\n");
+    }else if((fd1=open(src,O_RDONLY))==-1){
+        perror("source file can't open\n");
+        return;
+    }else{
+        fd2=open(dest,O_CREAT|O_TRUNC|O_WRONLY,0664);
+        ssize_t readbytes=0;
+        char buf[SIZE];
+        while((readbytes=read(fd1,buf,sizeof(buf)))>0)
+        {
+            write(fd2,buf,readbytes);
         }
         close(fd1);
+        close(fd2);
     }
 }
-void cp2(){}
-void rm2(){}
-void rename2(){}
+void rm2()
+{
+
+}
+void rename2(const char* oldname,const char* newname)
+{
+
+    //struct stat buf;
+    //if(oldname==NULL||oldname==NULL)
+    //{
+    //    perror("no oldname or no newname\n");
+    //}else if(stat(oldname,&buf)==-1){
+     //   perror("no such file or directory\n");
+    ///}else{
+        if(rename(oldname,newname)==-1){
+            printf("Error: %s\n",strerror(errno));
+        }else{
+            printf("rename success\n");
+        }
+//  }
+
+}
 void history2(){}
 void quit(){}
 void err(){}
@@ -153,9 +196,9 @@ int main(int argc,char** argv)
         case 3:touch2(index,cmd_argv);break;
         case 4:echo2(index,cmd_argv);break;
         case 5:cat2(cmd_argv[1]);break;
-        case 6:break;
+        case 6:cp2(index>1?cmd_argv[1]:NULL,index>2?cmd_argv[2]:NULL);break;
         case 7:break;
-        case 8:break;
+        case 8:rename(index>1?cmd_argv[1]:NULL,index>2?cmd_argv[2]:NULL);break;
         case 9:break;
         case 10:break;
         case 11:break;
