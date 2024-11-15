@@ -154,10 +154,11 @@ void rename2(const char* oldname,const char* newname)
     //}else if(stat(oldname,&buf)==-1){
      //   perror("no such file or directory\n");
     ///}else{
-        if(rename(oldname,newname)==-1){
-            printf("Error: %s\n",strerror(errno));
-        }else{
+        int num=rename(oldname,newname);
+        if(num==0){
             printf("rename success\n");
+        }else{
+            printf("Error: %s\n",strerror(errno));
         }
 //  }
 
@@ -165,6 +166,49 @@ void rename2(const char* oldname,const char* newname)
 void history2(){}
 void quit(){}
 void err(){}
+
+int rm_dir(const char* full_path)
+{
+    DIR* dirp=opendir(full_path);
+    if(!dirp)
+    {
+        perror("this directory can't open");
+        return -1;
+    }
+    struct dirent* dir;
+    struct stat st;
+    while((dir=readdir(dirp))!=NULL)
+    {
+        if(strcmp(dir->d_name,".")||strcmp(dir->d_name,".."))continue;
+        char* sub_path=(char*)malloc(sizeof(char)*(strlen(full_path)+strlen(dir_>d_name)+2));
+        strcpy(sub_path,full_path);
+        strcat(sub_path,"/");
+        strcat(sub_path,dir->d_name);
+        if(lstat(sub_path,&st)==-1)
+        {
+            perror("rm_dir lstat error\n");
+            continue;
+        }
+        //POSIX宏来使用st_mode字段检查文件类型,S_ISREG(mode_t st_mode)
+        if(S_ISDIR(st.st_mode))
+        {
+            if(rm_dir(sub_path)==-1)
+            
+                closedir(dirp);
+                return -1;
+            }
+        }else if(S_ISREG(st.st_mode))
+        {
+            unlink(sub_path);
+        }else{
+            perror("other types of file error\n");
+            continue;
+        }
+    if(rmdir(full_path)==-1)
+    {
+        perror("can't rmdir itself\n");
+    }
+}
 
 int main(int argc,char** argv)
 {
