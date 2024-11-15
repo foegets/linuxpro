@@ -140,10 +140,6 @@ void cp2(const char* src,const char* dest)
         close(fd2);
     }
 }
-void rm2()
-{
-
-}
 void rename2(const char* oldname,const char* newname)
 {
 
@@ -179,11 +175,11 @@ int rm_dir(const char* full_path)
     struct stat st;
     while((dir=readdir(dirp))!=NULL)
     {
-        if(strcmp(dir->d_name,".")||strcmp(dir->d_name,".."))continue;
-        char* sub_path=(char*)malloc(sizeof(char)*(strlen(full_path)+strlen(dir_>d_name)+2));
-        strcpy(sub_path,full_path);
-        strcat(sub_path,"/");
-        strcat(sub_path,dir->d_name);
+	    if(strcmp(dir->d_name,".")==0||strcmp(dir->d_name,"..")==0)continue;
+	    char* sub_path=(char*)malloc(sizeof(char)*(strlen(full_path)+strlen(dir->d_name)+2));
+	strcpy(sub_path,full_path);
+	strcat(sub_path,"/");
+	strcat(sub_path,dir->d_name);
         if(lstat(sub_path,&st)==-1)
         {
             perror("rm_dir lstat error\n");
@@ -192,7 +188,7 @@ int rm_dir(const char* full_path)
         //POSIX宏来使用st_mode字段检查文件类型,S_ISREG(mode_t st_mode)
         if(S_ISDIR(st.st_mode))
         {
-            if(rm_dir(sub_path)==-1)
+            if(rm_dir(sub_path)==-1){
             
                 closedir(dirp);
                 return -1;
@@ -204,12 +200,64 @@ int rm_dir(const char* full_path)
             perror("other types of file error\n");
             continue;
         }
+	free(sub_path);
+}
     if(rmdir(full_path)==-1)
     {
         perror("can't rmdir itself\n");
+	closedir(dirp);
+	return -1;
     }
+    closedir(dirp);
+    return 0;
 }
 
+int rm(const char* fname)
+{
+	char* fpath=(char*)malloc(sizeof(char)*(strlen(fname)+1));
+	strcpy(fpath,fname);
+	struct stat st;
+	if(lstat(fpath,&st)==-1)
+	{
+		perror("no this file");
+		return -1;
+	}
+	if(S_ISREG(st.st_mode))
+	{
+		if(unlink(fpath)==-1)
+		{
+			return 0;
+		}
+	}else if(S_ISDIR(st.st_mode))
+	{
+		if(strcmp(fpath,",")==0||strcmp(fpath,"..")==0)
+		{
+			return -1;
+		}
+		if(rm_dir(fpath)==-1)
+		{
+			return -1;
+		}
+	}
+	free(fpath);
+	return 0;
+}
+int rm2(int index,char cmd_argv[CMD_MAX][CMD_MAX])
+{
+	if(index==1)
+	{
+		perror("no name of file");
+	}
+	else if(index==2)
+	{
+		rm(cmd_argv[1]);
+	}
+	else if(index==3||strcmp(cmd_argv[1],"-r")==0)
+	{
+		rm(cmd_argv[2]);
+	}
+	return 0;
+}
 int main(int argc,char** argv)
 {
     char cmd[CMD_MAX];
@@ -241,7 +289,7 @@ int main(int argc,char** argv)
         case 4:echo2(index,cmd_argv);break;
         case 5:cat2(cmd_argv[1]);break;
         case 6:cp2(index>1?cmd_argv[1]:NULL,index>2?cmd_argv[2]:NULL);break;
-        case 7:break;
+        case 7:rm2(index,cmd_argv);break;
         case 8:rename(index>1?cmd_argv[1]:NULL,index>2?cmd_argv[2]:NULL);break;
         case 9:break;
         case 10:break;
